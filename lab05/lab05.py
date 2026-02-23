@@ -26,7 +26,27 @@ def process_response(self, response):
     # Fill out this function to process the response from the LLM
     # and make the function call
     # Hint: check response.message.tool_calls and use process_function_call
+
+    while response.message.tool_calls:
+        for tool_call in response.message.tool_calls:
+            fn = tool_call.function
+
+            if "player" not in fn.arguments or not fn.arguments["player"]:
+                fn.arguments["player"] = "adventurer"
+
+            result = process_function_call(fn)
+
+            self.messages.append({
+                'role': 'tool',
+                'name': fn.name,
+                'arguments': fn.arguments,
+                'content': result
+            })
+
+        # Ask model to continue bc of tool output
+        response = self.completion()
+
     return response
 
-run_console_chat(template_file='lab05/lab05_dice_template.json',
+run_console_chat(template_file='lab05_dice_template.json',
                  process_response=process_response)
