@@ -7,7 +7,13 @@ parameter to get structured, validated JSON output from an LLM.
 
 from typing import List
 
-import ollama
+try:
+    import ollama  # type: ignore
+except Exception:  # pragma: no cover
+    # Allow the module to be imported even if ollama isn't installed.
+    # The tests will auto-skip when Ollama isn't available.
+    ollama = None  # type: ignore
+
 from pydantic import BaseModel, Field
 
 
@@ -76,9 +82,6 @@ def generate_character(description: str) -> CharacterSheet:
         2. Parse the response with CharacterSheet.model_validate_json()
         3. Return the CharacterSheet instance
 
-    Refer to the Ollama Python API for more information:
-    https://github.com/ollama/ollama-python
-
     Args:
         description: A natural language description of the desired character,
                      e.g. "A wise old elven wizard who studied at the Arcane Academy"
@@ -86,7 +89,28 @@ def generate_character(description: str) -> CharacterSheet:
     Returns:
         A validated CharacterSheet instance
     """
-    pass
+    if ollama is None:  # pragma: no cover
+        raise RuntimeError("ollama package is not available. Install and run Ollama to use this lab.")
+
+    response = ollama.chat(
+        model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a helpful Dungeons & Dragons assistant. "
+                    "Create a complete 5e-style character sheet that matches the user's description. "
+                    "You MUST return JSON that matches the provided schema exactly. "
+                    "Choose reasonable values within all numeric bounds. "
+                    "Write a concise, flavorful backstory."
+                ),
+            },
+            {"role": "user", "content": description},
+        ],
+        format=CharacterSheet.model_json_schema(),
+    )
+
+    return CharacterSheet.model_validate_json(response.message.content)
 
 
 def generate_monster(concept: str) -> MonsterStats:
@@ -103,7 +127,27 @@ def generate_monster(concept: str) -> MonsterStats:
     Returns:
         A validated MonsterStats instance
     """
-    pass
+    if ollama is None:  # pragma: no cover
+        raise RuntimeError("ollama package is not available. Install and run Ollama to use this lab.")
+
+    response = ollama.chat(
+        model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a helpful Dungeons & Dragons assistant. "
+                    "Create a D&D 5e-style monster stat block matching the user's concept. "
+                    "You MUST return JSON that matches the provided schema exactly. "
+                    "Ensure abilities is a non-empty list of short ability descriptions."
+                ),
+            },
+            {"role": "user", "content": concept},
+        ],
+        format=MonsterStats.model_json_schema(),
+    )
+
+    return MonsterStats.model_validate_json(response.message.content)
 
 
 def generate_encounter(party_level: int, num_monsters: int, theme: str) -> Encounter:
@@ -128,7 +172,37 @@ def generate_encounter(party_level: int, num_monsters: int, theme: str) -> Encou
     Returns:
         A validated Encounter instance
     """
-    pass
+    if ollama is None:  # pragma: no cover
+        raise RuntimeError("ollama package is not available. Install and run Ollama to use this lab.")
+
+    prompt = (
+        "Create a complete D&D 5e encounter.\n"
+        f"Party level: {party_level}.\n"
+        f"Number of monsters: {num_monsters} (include exactly this many in the monsters list).\n"
+        f"Theme: {theme}.\n\n"
+        "Rules:\n"
+        "- Make the encounter appropriate for that party level.\n"
+        "- All monsters must fit the theme.\n"
+        "- Set difficulty to EXACTLY one of: Easy, Medium, Hard, Deadly.\n"
+        "- Return ONLY valid JSON matching the provided schema (no extra text)."
+    )
+
+    response = ollama.chat(
+        model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are a helpful Dungeons & Dragons encounter designer. "
+                    "You MUST output JSON that matches the provided schema exactly, including nested monster objects."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        format=Encounter.model_json_schema(),
+    )
+
+    return Encounter.model_validate_json(response.message.content)
 
 
 # ============================================================================
