@@ -43,8 +43,12 @@ class OllamaEmbeddingFunction(chromadb.EmbeddingFunction):
         Outputs:
             List[List[float]]: List of embedding vectors, one per input string.
         """
-        pass
 
+        embeddings = []
+        for text in input:
+            response = ollama.embed(model=self.model_name, input=text)
+            embeddings.append(response["embeddings"][0])
+        return embeddings
 
 def load_documents(data_dir: str) -> Dict[str, str]:
     """
@@ -156,8 +160,12 @@ def retrieve_context(collection: chromadb.Collection, query: str, n_results: int
     Outputs:
         List[str]: List of retrieved context strings relevant to the query.
     """
-    pass
 
+    results = collection.query(
+        query_texts=[query],
+        n_results=n_results
+    )
+    return results["documents"][0]
 
 
 def generate_response(query: str, contexts: List[str], model: str = "mistral:latest") -> str:
