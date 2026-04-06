@@ -26,7 +26,7 @@ from mcp.client.stdio import stdio_client
 from langchain_mcp_adapters.tools import load_mcp_tools
 
 # LangGraph - prebuilt ReAct agent that handles the tool-calling loop
-from langchain.agents import create_agent
+from langgraph.prebuilt import create_react_agent
 
 # Ollama LLM via LangChain
 from langchain_ollama import ChatOllama
@@ -44,20 +44,9 @@ SYSTEM_PROMPT = (
 async def chat_with_tools(user_message: str, agent) -> str:
     """
     Send a message to the LangGraph agent and return the final response.
-
-    TODO: Invoke the agent with the user message and extract the final answer.
-
-    Hint: The agent accepts a dict with a "messages" key containing a list of
-    (role, content) tuples:
-        result = await agent.ainvoke({"messages": [("human", user_message)]})
-
-    The result is also a dict with a "messages" key. The last message is the
-    agent's final response - return its .content attribute.
     """
-    # TODO: Invoke the LangGraph agent and return the final response
-    # result = await agent.ainvoke({"messages": [("human", user_message)]})
-    # return result["messages"][-1].content
-    return "Not implemented yet"
+    result = await agent.ainvoke({"messages": [("human", user_message)]})
+    return result["messages"][-1].content
 
 
 async def main():
@@ -84,10 +73,8 @@ async def main():
             await session.initialize()
             print("[OK] Connected to MCP server!")
 
-            # TODO: Load MCP tools as LangChain-compatible tools
-            # Use load_mcp_tools(session) - it returns a list of BaseTool objects
-            # that LangGraph can use directly (no manual format conversion needed!)
-            tools = []  # Replace with: tools = await load_mcp_tools(session)
+            # Load MCP tools as LangChain-compatible tools
+            tools = await load_mcp_tools(session)
 
             print(f"\nFound {len(tools)} tools:")
             for tool in tools:
@@ -100,11 +87,9 @@ async def main():
             # Create the Ollama LLM
             llm = ChatOllama(model=OLLAMA_MODEL)
 
-            # TODO: Create a LangGraph ReAct agent
-            # Pass the llm, tools, and SYSTEM_PROMPT (as state_modifier) to create_react_agent.
-            # The agent will automatically handle the tool-calling loop - no manual loop needed!
-            # agent = create_agent(llm, tools, system_prompt=SYSTEM_PROMPT)
-            agent = None  # Replace this line with the agent creation above
+            # Create a LangGraph ReAct agent
+            # create_react_agent handles the tool-calling loop automatically
+            agent = create_react_agent(llm, tools, state_modifier=SYSTEM_PROMPT)
 
             # Interactive chat loop
             print("\n" + "-" * 60)
