@@ -3,7 +3,7 @@ name = "spring2025-labs"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = "==3.13"
 dependencies = [
     "chromadb>=1.5.5",
     "fastapi>=0.100.0",
@@ -23,4 +23,5 @@ dependencies = [
     "langchain-ollama>=0.2.0",
     "langchain>=1.2.0",
     "ollama>=0.6.1",
+    "gymnasium[box2d]>=1.2.3",
 ]
